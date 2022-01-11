@@ -13,13 +13,13 @@
     "postversion": "git push origin HEAD:main && git push --follow-tags"
   },
   "dependencies": {
-    "@actions/core": "^1.6.0",
-    "@actions/github": "^5.0.0",
-    "axios": "^0.24.0",
+    "@actions/core": "^1.2.6",
+    "@actions/github": "^4.0.0",
+    "axios": "^0.21.1",
     "semver": "^7.3.5",
-    "simple-git": "^2.48.0"
+    "simple-git": "^2.37.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.33.1"
+    "@vercel/ncc": "^0.27.0"
   }
 }
