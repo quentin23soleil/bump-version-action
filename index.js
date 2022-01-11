@@ -5,6 +5,7 @@ const fs = require("fs");
 const semver = require("semver");
 const axios = require("axios");
 const path = require("path");
+const {getMultilineInput} = require("@actions/core");
 const gitClient = simpleGit.default();
 
 const repoInfo = async () => {
@@ -97,7 +98,8 @@ const postrelease = async (org, repo, sha) => {
   const versionFile = core.getInput("version-file", { required: true });
   const repoToken = core.getInput("repo-token");
   const majorTag = core.getInput("major-tag");
-  const releaseFiles = core.getInput("files");
+  const releaseFiles = core.getMultilineInput("files");
+  console.log(`release files: ${releaseFiles}`);
 
   const octokit = github.getOctokit(repoToken);
 
@@ -167,6 +169,7 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
       let filePath = releaseFiles[releaseFilesKey]
       let filename = path.basename(filePath)
       let file = fs.readFileSync(filePath)
+      console.log(`uploading: ${filePath}`);
 
       await octokit.repos.uploadReleaseAsset({
         owner: org,
