@@ -1,10 +1,10 @@
 {
-  "name": "setup-bootstrap",
-  "version": "1.0.101",
-  "description": "GitHub Action for scaffoldly/bootstrap",
+  "name": "bump-version-action",
+  "version": "1.0.0",
+  "description": "GitHub Action for quentin23soleil/bump-version-action",
   "main": "index.js",
-  "repository": "git@github.com:scaffoldly/setup-bootstrap.git",
-  "author": "Christian Nuss",
+  "repository": "git@github.com:quentin23soleil/bump-version-action.git",
+  "author": "Quentin Dommerc",
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "ncc build index.js --license licenses.txt",
@@ -13,13 +13,13 @@
     "postversion": "git push origin HEAD:main && git push --follow-tags"
   },
   "dependencies": {
-    "@actions/core": "^1.2.6",
-    "@actions/github": "^4.0.0",
-    "axios": "^0.21.1",
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^5.0.0",
+    "axios": "^0.24.0",
     "semver": "^7.3.5",
-    "simple-git": "^2.37.0"
+    "simple-git": "^2.48.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.27.0"
+    "@vercel/ncc": "^0.33.1"
   }
 }

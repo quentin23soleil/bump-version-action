@@ -4,7 +4,7 @@ const simpleGit = require("simple-git");
 const fs = require("fs");
 const semver = require("semver");
 const axios = require("axios");
-
+const path = require("path");
 const gitClient = simpleGit.default();
 
 const repoInfo = async () => {
@@ -69,7 +69,7 @@ const prerelease = async (org, repo) => {
   console.log("Current version:", version.version);
 
   const newVersion = semver.parse(
-    semver.inc(semver.parse(version.version), "prerelease")
+      semver.inc(semver.parse(version.version), "prerelease")
   );
   versionSet(versionFile, newVersion.version);
 
@@ -81,8 +81,8 @@ const prerelease = async (org, repo) => {
 
   const versionCommit = await gitClient.commit(title);
   console.log(
-    `Committed new version: ${newVersion.version}`,
-    JSON.stringify(versionCommit)
+      `Committed new version: ${newVersion.version}`,
+      JSON.stringify(versionCommit)
   );
 
   const tag = await gitClient.addTag(newVersion.version);
@@ -97,6 +97,7 @@ const postrelease = async (org, repo, sha) => {
   const versionFile = core.getInput("version-file", { required: true });
   const repoToken = core.getInput("repo-token");
   const majorTag = core.getInput("major-tag");
+  const releaseFiles = core.getInput("files");
 
   const octokit = github.getOctokit(repoToken);
 
@@ -104,7 +105,7 @@ const postrelease = async (org, repo, sha) => {
   await gitClient.checkout(sha);
   const tagVersion = versionFetch(versionFile);
   const newTagVersion = semver.parse(
-    semver.inc(semver.parse(tagVersion.version), "patch")
+      semver.inc(semver.parse(tagVersion.version), "patch")
   );
   const tag = await gitClient.addTag(newTagVersion.version);
   console.log(`Created new tag: ${tag.name}`);
@@ -112,19 +113,19 @@ const postrelease = async (org, repo, sha) => {
   if (majorTag) {
     try {
       console.log(
-        `Major Tag Enabled: Attempting delete of existing tag v${newTagVersion.major}`
+          `Major Tag Enabled: Attempting delete of existing tag v${newTagVersion.major}`
       );
       await gitClient.raw(["tag", "-d", `v${newTagVersion.major}`]);
     } catch (e) {
       console.warn(
-        `Error deleting existing tag v${newTagVersion.major}`,
-        e.message
+          `Error deleting existing tag v${newTagVersion.major}`,
+          e.message
       );
     }
 
     const superTag = await simpleGit
-      .default()
-      .addTag(`v${newTagVersion.major}`);
+        .default()
+        .addTag(`v${newTagVersion.major}`);
     console.log(`Created new super tag: ${superTag.name}`);
 
     await gitClient.pushTags(["--force"]);
@@ -162,8 +163,21 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
       tag_name: newTagVersion.version,
     });
 
+    for (let releaseFilesKey in releaseFiles) {
+      let filePath = releaseFiles[releaseFilesKey]
+      let filename = path.basename(filePath)
+      let file = fs.readFileSync(filePath)
+
+      await octokit.repos.uploadReleaseAsset({
+        owner: org,
+        repo,
+        release_id: release.data.id,
+        name: filename,
+        data: file
+      })
+    }
     console.log(
-      `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
+        `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
     );
   }
 
@@ -182,7 +196,7 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
   console.log("Current version", version.version);
 
   const newVersion = semver.parse(
-    semver.inc(semver.parse(version.version), "patch")
+      semver.inc(semver.parse(version.version), "patch")
   );
   console.log("New version", newVersion.version);
 
@@ -192,8 +206,8 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 
   const commit = await gitClient.commit(title, versionFile);
   console.log(
-    `Committed new version: ${newVersion.version}`,
-    JSON.stringify(commit)
+      `Committed new version: ${newVersion.version}`,
+      JSON.stringify(commit)
   );
 
   await gitClient.push();
@@ -204,24 +218,24 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 };
 
 const createLogMessages = (
-  logs,
-  org,
-  repo,
-  fromTag,
-  options = { links: true, messages: true, authors: true }
+    logs,
+    org,
+    repo,
+    fromTag,
+    options = { links: true, messages: true, authors: true }
 ) => {
   let body = logs
-    .map((log) => {
-      return `
+      .map((log) => {
+        return `
  - ${log.hash.slice(0, 7)}: ${
-        options.messages ? `**${log.message.split("\n")[0]}** ` : ""
-      }${options.authors ? `(${log.author_name}) ` : ""}${
-        options.links
-          ? `[_[compare](https://github.com/${org}/${repo}/compare/${fromTag}...${log.hash})_] `
-          : ``
-      }`;
-    })
-    .join("\n");
+            options.messages ? `**${log.message.split("\n")[0]}** ` : ""
+        }${options.authors ? `(${log.author_name}) ` : ""}${
+            options.links
+                ? `[_[compare](https://github.com/${org}/${repo}/compare/${fromTag}...${log.hash})_] `
+                : ``
+        }`;
+      })
+      .join("\n");
 
   if (body.length >= 20000) {
     console.warn("Body is long. Skipping links...");
@@ -277,8 +291,8 @@ const draftRelease = async (org, repo, version, sha) => {
   // const defaultBranch = info.data.default_branch;
 
   const { all: logs } = await simpleGit
-    .default()
-    .log({ from: fromTag, to: sha, "--first-parent": true });
+      .default()
+      .log({ from: fromTag, to: sha, "--first-parent": true });
 
   let body = createLogMessages(logs, org, repo, fromTag);
 
@@ -307,20 +321,20 @@ const event = (org, repo, action) => {
   }
 
   axios.default
-    .post(
-      `https://api.segment.io/v1/track`,
-      {
-        userId: org,
-        event: action,
-        properties: { script: "bump-version-action" },
-        context: { repo },
-      },
-      { auth: { username: "RvjEAi2NrzWFz3SL0bNwh5yVwrwWr0GA", password: "" } }
-    )
-    .then(() => {})
-    .catch((error) => {
-      console.error("Event Log Error", error);
-    });
+      .post(
+          `https://api.segment.io/v1/track`,
+          {
+            userId: org,
+            event: action,
+            properties: { script: "bump-version-action" },
+            context: { repo },
+          },
+          { auth: { username: "RvjEAi2NrzWFz3SL0bNwh5yVwrwWr0GA", password: "" } }
+      )
+      .then(() => {})
+      .catch((error) => {
+        console.error("Event Log Error", error);
+      });
 };
 
 const run = async () => {
@@ -331,8 +345,8 @@ const run = async () => {
 
   await gitClient.addConfig("user.name", "GitHub Action");
   await simpleGit
-    .default()
-    .addConfig("user.email", "github-action@users.noreply.github.com");
+      .default()
+      .addConfig("user.email", "github-action@users.noreply.github.com");
 
   switch (action) {
     case "prerelease": {
