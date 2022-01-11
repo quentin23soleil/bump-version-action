@@ -165,6 +165,39 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
       tag_name: newTagVersion.version,
     });
 
+    const info = await octokit.repos.get({ owner: org, repo });
+    let defaultBranch = info.data.default_branch;
+
+    if (releaseBranch) {
+      defaultBranch = releaseBranch;
+    }
+
+    console.log("Updating version on branch:", releaseBranch);
+
+    await gitClient.checkout(defaultBranch);
+
+    const version = versionFetch(versionFile);
+    console.log("Current version", version.version);
+
+    const newVersion = semver.parse(
+        semver.inc(semver.parse(version.version), "patch")
+    );
+    console.log("New version", newVersion.version);
+
+    versionSet(versionFile, newVersion.version);
+
+    const title = commitMessagePrefix(`CI: Postrelease: ${newVersion.version}`);
+
+    const commit = await gitClient.commit(title, versionFile);
+    console.log(
+        `Committed new version: ${newVersion.version}`,
+        JSON.stringify(commit)
+    );
+
+    await gitClient.push();
+
+    versionSet(versionFile, newTagVersion.version);
+
     for (let releaseFilesKey in releaseFiles) {
       let filePath = releaseFiles[releaseFilesKey]
       let filename = path.basename(filePath)
@@ -184,196 +217,163 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
     );
   }
 
-  const info = await octokit.repos.get({ owner: org, repo });
-  let defaultBranch = info.data.default_branch;
-
-  if (releaseBranch) {
-    defaultBranch = releaseBranch;
-  }
-
-  console.log("Updating version on branch:", releaseBranch);
-
-  await gitClient.checkout(defaultBranch);
-
-  const version = versionFetch(versionFile);
-  console.log("Current version", version.version);
-
-  const newVersion = semver.parse(
-      semver.inc(semver.parse(version.version), "patch")
-  );
-  console.log("New version", newVersion.version);
-
-  versionSet(versionFile, newVersion.version);
-
-  const title = commitMessagePrefix(`CI: Postrelease: ${newVersion.version}`);
-
-  const commit = await gitClient.commit(title, versionFile);
-  console.log(
-      `Committed new version: ${newVersion.version}`,
-      JSON.stringify(commit)
-  );
-
-  await gitClient.push();
-
-  versionSet(versionFile, newTagVersion.version);
-
   return { version: newVersion };
-};
+  };
 
-const createLogMessages = (
-    logs,
-    org,
-    repo,
-    fromTag,
-    options = { links: true, messages: true, authors: true }
-) => {
-  let body = logs
-      .map((log) => {
-        return `
+  const createLogMessages = (
+      logs,
+      org,
+      repo,
+      fromTag,
+      options = { links: true, messages: true, authors: true }
+  ) => {
+    let body = logs
+        .map((log) => {
+          return `
  - ${log.hash.slice(0, 7)}: ${
-            options.messages ? `**${log.message.split("\n")[0]}** ` : ""
-        }${options.authors ? `(${log.author_name}) ` : ""}${
-            options.links
-                ? `[_[compare](https://github.com/${org}/${repo}/compare/${fromTag}...${log.hash})_] `
-                : ``
-        }`;
-      })
-      .join("\n");
+              options.messages ? `**${log.message.split("\n")[0]}** ` : ""
+          }${options.authors ? `(${log.author_name}) ` : ""}${
+              options.links
+                  ? `[_[compare](https://github.com/${org}/${repo}/compare/${fromTag}...${log.hash})_] `
+                  : ``
+          }`;
+        })
+        .join("\n");
 
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping links...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: true,
-      messages: true,
-    });
-  }
+    if (body.length >= 20000) {
+      console.warn("Body is long. Skipping links...");
+      body = createLogMessages(logs, org, repo, fromTag, {
+        links: false,
+        authors: true,
+        messages: true,
+      });
+    }
 
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping messages...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: true,
-      messages: false,
-    });
-  }
+    if (body.length >= 20000) {
+      console.warn("Body is long. Skipping messages...");
+      body = createLogMessages(logs, org, repo, fromTag, {
+        links: false,
+        authors: true,
+        messages: false,
+      });
+    }
 
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping authors...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: false,
-      messages: false,
-    });
-  }
+    if (body.length >= 20000) {
+      console.warn("Body is long. Skipping authors...");
+      body = createLogMessages(logs, org, repo, fromTag, {
+        links: false,
+        authors: false,
+        messages: false,
+      });
+    }
 
-  return body;
-};
+    return body;
+  };
 
 // TODO: Handle PR
 // TODO: Glob Up Commit Messages since last release
-const draftRelease = async (org, repo, version, sha) => {
-  const repoToken = core.getInput("repo-token");
-  const octokit = github.getOctokit(repoToken);
+  const draftRelease = async (org, repo, version, sha) => {
+    const repoToken = core.getInput("repo-token");
+    const octokit = github.getOctokit(repoToken);
 
-  await gitClient.fetch(["--unshallow"]);
+    await gitClient.fetch(["--unshallow"]);
 
-  let fromTag;
-  try {
-    const latestRelease = await octokit.repos.getLatestRelease({
+    let fromTag;
+    try {
+      const latestRelease = await octokit.repos.getLatestRelease({
+        owner: org,
+        repo,
+      });
+      fromTag = latestRelease.data.tag_name;
+    } catch (e) {
+      console.warn("Unable to find latest release:", e.message);
+      fromTag = (await gitClient.log()).all.slice(-1)[0].hash;
+    }
+
+    // const info = await octokit.repos.get({ owner: org, repo });
+    // const defaultBranch = info.data.default_branch;
+
+    const { all: logs } = await simpleGit
+        .default()
+        .log({ from: fromTag, to: sha, "--first-parent": true });
+
+    let body = createLogMessages(logs, org, repo, fromTag);
+
+    const release = await octokit.repos.createRelease({
       owner: org,
       repo,
-    });
-    fromTag = latestRelease.data.tag_name;
-  } catch (e) {
-    console.warn("Unable to find latest release:", e.message);
-    fromTag = (await gitClient.log()).all.slice(-1)[0].hash;
-  }
-
-  // const info = await octokit.repos.get({ owner: org, repo });
-  // const defaultBranch = info.data.default_branch;
-
-  const { all: logs } = await simpleGit
-      .default()
-      .log({ from: fromTag, to: sha, "--first-parent": true });
-
-  let body = createLogMessages(logs, org, repo, fromTag);
-
-  const release = await octokit.repos.createRelease({
-    owner: org,
-    repo,
-    name: version.version,
-    tag_name: version.version,
-    draft: true,
-    body: `
+      name: version.version,
+      tag_name: version.version,
+      draft: true,
+      body: `
 # Release ${version.version}:
 
 ## Commits since [${fromTag}](https://github.com/${org}/${repo}/compare/${fromTag}...${version.version}):
 
 ${body}
 `,
-  });
+    });
 
-  console.log(`Created release: ${release.data.name}: ${release.data.url}`);
-};
+    console.log(`Created release: ${release.data.name}: ${release.data.url}`);
+  };
 
-const event = (org, repo, action) => {
-  const dnt = core.getInput("dnt", { required: false });
-  if (dnt) {
-    return;
-  }
-
-  axios.default
-      .post(
-          `https://api.segment.io/v1/track`,
-          {
-            userId: org,
-            event: action,
-            properties: { script: "bump-version-action" },
-            context: { repo },
-          },
-          { auth: { username: "RvjEAi2NrzWFz3SL0bNwh5yVwrwWr0GA", password: "" } }
-      )
-      .then(() => {})
-      .catch((error) => {
-        console.error("Event Log Error", error);
-      });
-};
-
-const run = async () => {
-  const action = core.getInput("action", { required: true });
-  const { organization, repo, sha } = await repoInfo();
-
-  event(organization, repo, action);
-
-  await gitClient.addConfig("user.name", "GitHub Action");
-  await simpleGit
-      .default()
-      .addConfig("user.email", "github-action@users.noreply.github.com");
-
-  switch (action) {
-    case "prerelease": {
-      const { version } = await prerelease(organization, repo);
-      await draftRelease(organization, repo, version, sha);
-      break;
+  const event = (org, repo, action) => {
+    const dnt = core.getInput("dnt", { required: false });
+    if (dnt) {
+      return;
     }
 
-    case "postrelease": {
-      // Naively bumping version, but this is probably good...
-      await postrelease(organization, repo, sha);
-      break;
+    axios.default
+        .post(
+            `https://api.segment.io/v1/track`,
+            {
+              userId: org,
+              event: action,
+              properties: { script: "bump-version-action" },
+              context: { repo },
+            },
+            { auth: { username: "RvjEAi2NrzWFz3SL0bNwh5yVwrwWr0GA", password: "" } }
+        )
+        .then(() => {})
+        .catch((error) => {
+          console.error("Event Log Error", error);
+        });
+  };
+
+  const run = async () => {
+    const action = core.getInput("action", { required: true });
+    const { organization, repo, sha } = await repoInfo();
+
+    event(organization, repo, action);
+
+    await gitClient.addConfig("user.name", "GitHub Action");
+    await simpleGit
+        .default()
+        .addConfig("user.email", "github-action@users.noreply.github.com");
+
+    switch (action) {
+      case "prerelease": {
+        const { version } = await prerelease(organization, repo);
+        await draftRelease(organization, repo, version, sha);
+        break;
+      }
+
+      case "postrelease": {
+        // Naively bumping version, but this is probably good...
+        await postrelease(organization, repo, sha);
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
+  };
 
-    default:
-      throw new Error(`Unknown action: ${action}`);
-  }
-};
-
-(async () => {
-  try {
-    await run();
-  } catch (e) {
-    console.error(e);
-    core.setFailed(e.message);
-  }
-})();
+  (async () => {
+    try {
+      await run();
+    } catch (e) {
+      console.error(e);
+      core.setFailed(e.message);
+    }
+  })();
