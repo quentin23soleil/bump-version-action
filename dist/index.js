@@ -105,10 +105,12 @@ const postrelease = async (org, repo, sha) => {
   console.log(`release files: ${releaseFiles}`);
 
   const octokit = github.getOctokit(repoToken);
+  console.log(JSON.stringify(octokit))
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
   const tagVersion = versionFetch();
+  console.log(JSON.stringify(tagVersion))
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
