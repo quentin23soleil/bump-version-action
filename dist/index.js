@@ -60,44 +60,14 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-
-  console.log(JSON.stringify(github.context))
-  try {
-    const ref = github.context.ref
-    const tagPath = 'refs/tags/'
-    if (ref && ref.startsWith(tagPath)) {
-      console.log("if")
-      let tag = ref.substr(tagPath.length, ref.length)
-      const regexStr = core.getInput('tagRegex')
-      if (regexStr) {
-        console.log("if2")
-        const regex = new RegExp(regexStr)
-        const groupIdx = parseInt(core.getInput('tagRegexGroup') || '1')
-        const result = regex.exec(tag)
-        if (result && result.length > groupIdx) {
-          console.log("if3")
-          tag = result[groupIdx]
-        } else {
-          console.log("else")
-          core.warning(`Failed to match regex '${regexStr}' in tag string '${tag}'. Result is '${result}'`)
-          return
-        }
-        // Return named groups on output
-        if (result.groups) {
-          console.log("if4")
-          for (const [key, value] of Object.entries(result.groups)) {
-            core.setOutput(key, value)
-          }
-        }
-      }
-      console.log(JSON.stringify(tag))
-      return {version: tag}
-    }
-  } catch (error) {
-    console.log("catch")
-    core.setFailed(error.message)
-  }
-  return {version: "0.0.0"}
+  // const result = gitDescribe({
+  //   customArguments: ["--tags", "--abbrev=0"]
+  // })
+  console.log("result of listRemote:" + JSON.stringify(await gitClient.listRemote()))
+  console.log("result of fetch:" + JSON.stringify(await gitClient.fetch()))
+  console.log("result of tags:" + JSON.stringify(await gitClient.tags()))
+  // console.log("result of git describe:" + JSON.stringify(result))
+  return {version: "1.0.0"}
 };
 const prerelease = async (org, repo) => {
   const version = await versionFetch();
