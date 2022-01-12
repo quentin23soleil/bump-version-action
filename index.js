@@ -53,13 +53,6 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  // const result = gitDescribe({
-  //   customArguments: ["--tags", "--abbrev=0"]
-  // })
-  console.log("result of listRemote:" + JSON.stringify(await gitClient.listRemote()))
-  console.log("result of fetch:" + JSON.stringify(await gitClient.fetch("origin")))
-  console.log("result of tags:" + JSON.stringify(await gitClient.tags()))
-  // console.log("result of git describe:" + JSON.stringify(result))
   return {version: "1.0.0"}
 };
 const prerelease = async (org, repo) => {
@@ -98,12 +91,10 @@ const postrelease = async (org, repo, sha) => {
   console.log(`release files: ${releaseFiles}`);
 
   const octokit = github.getOctokit(repoToken);
-  console.log(JSON.stringify(await octokit.repos.get()))
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
   const tagVersion = versionFetch();
-  console.log(JSON.stringify(tagVersion))
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
