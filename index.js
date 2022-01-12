@@ -58,7 +58,7 @@ const versionFetch = async () => {
   // })
   console.log("result of git describe:" + JSON.stringify(await gitClient.tags()))
   // console.log("result of git describe:" + JSON.stringify(result))
-  return "0"
+  return {version: "1.0.0"}
 };
 const prerelease = async (org, repo) => {
   const version = versionFetch();
