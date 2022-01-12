@@ -56,6 +56,7 @@ const versionFetch = async () => {
   // const result = gitDescribe({
   //   customArguments: ["--tags", "--abbrev=0"]
   // })
+  await gitClient.fetch()
   console.log("result of git describe:" + JSON.stringify(await gitClient.tags()))
   // console.log("result of git describe:" + JSON.stringify(result))
   return {version: "1.0.0"}
