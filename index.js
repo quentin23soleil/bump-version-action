@@ -51,28 +51,17 @@ const commitMessagePrefix = (message) => {
   return `🤖 ${prefix} ${message}`;
 };
 
-const versionFetch = (versionFile) => {
-  const json = JSON.parse(fs.readFileSync(versionFile));
-  const version = semver.parse(json.version);
-  return version;
+const versionFetch = async () => {
+  return gitClient.raw("git describe --tags --abbrev=0")
 };
-
-const versionSet = (versionFile, version) => {
-  const json = JSON.parse(fs.readFileSync(versionFile));
-  json.version = version;
-  fs.writeFileSync(versionFile, JSON.stringify(json, null, 2));
-};
-
 const prerelease = async (org, repo) => {
-  const versionFile = core.getInput("version-file", { required: true });
-  const version = versionFetch(versionFile);
+  const version = versionFetch();
 
   console.log("Current version:", version.version);
 
   const newVersion = semver.parse(
       semver.inc(semver.parse(version.version), "prerelease")
   );
-  versionSet(versionFile, newVersion.version);
 
   console.log("New version:", newVersion.version);
 
@@ -95,7 +84,6 @@ const prerelease = async (org, repo) => {
 };
 
 const postrelease = async (org, repo, sha) => {
-  const versionFile = core.getInput("version-file", { required: true });
   const repoToken = core.getInput("repo-token");
   const majorTag = core.getInput("major-tag");
   const releaseFiles = core.getMultilineInput("files");
@@ -105,7 +93,7 @@ const postrelease = async (org, repo, sha) => {
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
-  const tagVersion = versionFetch(versionFile);
+  const tagVersion = versionFetch();
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
@@ -176,27 +164,14 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 
     await gitClient.checkout(defaultBranch);
 
-    const version = versionFetch(versionFile);
+    const version = versionFetch();
     console.log("Current version", version.version);
 
     const newVersion = semver.parse(
         semver.inc(semver.parse(version.version), "patch")
     );
     console.log("New version", newVersion.version);
-
-    versionSet(versionFile, newVersion.version);
-
-    const title = commitMessagePrefix(`CI: Postrelease: ${newVersion.version}`);
-
-    const commit = await gitClient.commit(title, versionFile);
-    console.log(
-        `Committed new version: ${newVersion.version}`,
-        JSON.stringify(commit)
-    );
-
     await gitClient.push();
-
-    versionSet(versionFile, newTagVersion.version);
 
     // for (let releaseFilesKey in releaseFiles) {
     //   let filePath = releaseFiles[releaseFilesKey]
