@@ -7,6 +7,7 @@ const axios = require("axios");
 const path = require("path");
 const {getMultilineInput} = require("@actions/core");
 const gitClient = simpleGit.default();
+const gitDescribe = require('git-describe');
 
 const repoInfo = async () => {
   const log = await gitClient.log({ maxCount: 1 });
@@ -52,8 +53,10 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  gitClient.fetch()
-  const result = gitClient.raw("describe", "--tags", "--abbrev=0")
+  const result = gitDescribe({
+    customArguments: ["--tags", "--abbrev=0"]
+  })
+  console.log("result of git describe:" + JSON.stringify(await gitClient.tags()))
   console.log("result of git describe:" + JSON.stringify(result))
   return result
 };

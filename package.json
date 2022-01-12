@@ -16,6 +16,7 @@
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
     "axios": "^0.21.1",
+    "git-describe": "^4.1.0",
     "semver": "^7.3.5",
     "simple-git": "^2.37.0"
   },
