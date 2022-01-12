@@ -93,7 +93,7 @@ const versionFetch = async () => {
   return {version: "0.0.0"}
 };
 const prerelease = async (org, repo) => {
-  const version = versionFetch();
+  const version = await versionFetch();
 
   console.log("Current version:", version.version);
 
@@ -131,7 +131,7 @@ const postrelease = async (org, repo, sha) => {
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
-  const tagVersion = versionFetch();
+  const tagVersion = await versionFetch();
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
@@ -202,7 +202,7 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 
     await gitClient.checkout(defaultBranch);
 
-    const version = versionFetch();
+    const version = await versionFetch();
     console.log("Current version", version.version);
 
     const newVersion = semver.parse(
