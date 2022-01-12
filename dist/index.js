@@ -60,14 +60,8 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  // const result = gitDescribe({
-  //   customArguments: ["--tags", "--abbrev=0"]
-  // })
-  console.log("result of listRemote:" + JSON.stringify(await gitClient.listRemote()))
-  console.log("result of fetch:" + JSON.stringify(await gitClient.fetch()))
-  console.log("result of tags:" + JSON.stringify(await gitClient.tags()))
-  // console.log("result of git describe:" + JSON.stringify(result))
-  return {version: "1.0.0"}
+  const tags = await gitClient.tags()
+  return { version: tags.latest }
 };
 const prerelease = async (org, repo) => {
   const version = await versionFetch();
