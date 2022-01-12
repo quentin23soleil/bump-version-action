@@ -53,12 +53,12 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  const result = gitDescribe({
-    customArguments: ["--tags", "--abbrev=0"]
-  })
+  // const result = gitDescribe({
+  //   customArguments: ["--tags", "--abbrev=0"]
+  // })
   console.log("result of git describe:" + JSON.stringify(await gitClient.tags()))
-  console.log("result of git describe:" + JSON.stringify(result))
-  return result
+  // console.log("result of git describe:" + JSON.stringify(result))
+  return "0"
 };
 const prerelease = async (org, repo) => {
   const version = versionFetch();
