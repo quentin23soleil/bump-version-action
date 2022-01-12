@@ -59,7 +59,7 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  const result = gitClient.raw("git", "describe", "--tags", "--abbrev=0")
+  const result = gitClient.raw("describe", "--tags", "--abbrev=0")
   console.log("result of git describe:" + JSON.stringify(result))
   return result
 };
