@@ -105,7 +105,7 @@ const postrelease = async (org, repo, sha) => {
   console.log(`release files: ${releaseFiles}`);
 
   const octokit = github.getOctokit(repoToken);
-  console.log(JSON.stringify(octokit))
+  console.log(JSON.stringify(await octokit.repos.get()))
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
