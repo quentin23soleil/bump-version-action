@@ -7,9 +7,6 @@ inputs:
   action:
     description: The release action ('prerelease' or 'postrelease')
     required: true
-  version-file:
-    description: "The file that maintains the version (e.g. package.json, sly.json)"
-    required: true
   files:
     description: "The files to be uploaded in the release"
     required: false

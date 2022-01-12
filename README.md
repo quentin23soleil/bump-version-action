@@ -6,7 +6,6 @@ This action will bump versions, create releases and manage tagging.
 
 The following steps are taken:
 
-- The `version` is parsed from `version-file`
 - It `prerelease` (`-#`) version (`X.Y.Z-#`) is appended or incremented using `semver`
 - The updated version and all modified files are committed (`git add .`)
 - A tag is pushed with the same name as the new version
@@ -16,7 +15,6 @@ The following steps are taken:
 
 The following steps are taken:
 
-- The `version` is parsed from the `version-file`
 - The Default Branch is checked out
 - The `prerelease` (`-#`) version (`X.Y.Z-#`) is lobbed off using `semver`
 - The updated version is committed
@@ -28,10 +26,6 @@ The following steps are taken:
 ## `action`
 
 **Required** The action to run: 'prerelease' or 'postrelease'
-
-## `version-file`
-
-**Required** The version file to manage, e.g. 'package.json'
 
 ## `repo-token`
 
@@ -69,7 +63,6 @@ jobs:
       - uses: scaffoldly/bump-version-action@main
         with:
           action: prerelease
-          version-file: package.json
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
@@ -87,6 +80,5 @@ jobs:
       - uses: scaffoldly/bump-version-action@main
         with:
           action: postrelease
-          version-file: package.json
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
