@@ -53,7 +53,38 @@ const commitMessagePrefix = (message) => {
 };
 
 const versionFetch = async () => {
-  return {version: "1.0.0"}
+
+  console.log(JSON.stringify(github.context))
+  try {
+    const ref = github.context.ref
+    const tagPath = 'refs/tags/'
+    if (ref && ref.startsWith(tagPath)) {
+      let tag = ref.substr(tagPath.length, ref.length)
+      const regexStr = core.getInput('tagRegex')
+      if (regexStr) {
+        const regex = new RegExp(regexStr)
+        const groupIdx = parseInt(core.getInput('tagRegexGroup') || '1')
+        const result = regex.exec(tag)
+        if (result && result.length > groupIdx) {
+          tag = result[groupIdx]
+        } else {
+          core.warning(`Failed to match regex '${regexStr}' in tag string '${tag}'. Result is '${result}'`)
+          return
+        }
+        // Return named groups on output
+        if (result.groups) {
+          for (const [key, value] of Object.entries(result.groups)) {
+            core.setOutput(key, value)
+          }
+        }
+      }
+      console.log(JSON.stringify(tag))
+      return {version: tag}
+    }
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+  return {version: "0.0.0"}
 };
 const prerelease = async (org, repo) => {
   const version = versionFetch();
