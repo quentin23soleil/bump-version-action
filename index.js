@@ -59,20 +59,25 @@ const versionFetch = async () => {
     const ref = github.context.ref
     const tagPath = 'refs/tags/'
     if (ref && ref.startsWith(tagPath)) {
+      console.log("if")
       let tag = ref.substr(tagPath.length, ref.length)
       const regexStr = core.getInput('tagRegex')
       if (regexStr) {
+        console.log("if2")
         const regex = new RegExp(regexStr)
         const groupIdx = parseInt(core.getInput('tagRegexGroup') || '1')
         const result = regex.exec(tag)
         if (result && result.length > groupIdx) {
+          console.log("if3")
           tag = result[groupIdx]
         } else {
+          console.log("else")
           core.warning(`Failed to match regex '${regexStr}' in tag string '${tag}'. Result is '${result}'`)
           return
         }
         // Return named groups on output
         if (result.groups) {
+          console.log("if4")
           for (const [key, value] of Object.entries(result.groups)) {
             core.setOutput(key, value)
           }
@@ -82,6 +87,7 @@ const versionFetch = async () => {
       return {version: tag}
     }
   } catch (error) {
+    console.log("catch")
     core.setFailed(error.message)
   }
   return {version: "0.0.0"}
