@@ -119,7 +119,7 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
       `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
   );
 
-  return { version: newVersion };
+  return { version: newTagVersion.version };
 };
 
 const createLogMessages = (
