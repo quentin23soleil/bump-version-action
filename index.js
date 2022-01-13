@@ -104,7 +104,7 @@ const postrelease = async (org, repo, sha) => {
       .default()
       .log({from: tagVersion.version, to: sha, "--first-parent": true});
 
-  let body = createLogMessages(logs, org, repo, tagVersion.version);
+  // let body = createLogMessages(logs, org, repo, tagVersion.version);
 
   const release = await octokit.repos.createRelease({
     owner: org,
@@ -112,7 +112,7 @@ const postrelease = async (org, repo, sha) => {
     name: newTagVersion.version,
     tag_name: newTagVersion.version,
     draft: false,
-    body: body
+    body: ""
   });
 
   console.log(`Created release: ${release.data.name}: ${release.data.url}`);
