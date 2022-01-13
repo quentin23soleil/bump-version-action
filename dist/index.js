@@ -107,12 +107,6 @@ const postrelease = async (org, repo, sha) => {
     await gitClient.pushTags();
   }
 
-  const {all: logs} = await simpleGit
-      .default()
-      .log({from: tagVersion.version, to: sha, "--first-parent": true});
-
-  // let body = createLogMessages(logs, org, repo, tagVersion.version);
-
   const release = await octokit.repos.createRelease({
     owner: org,
     repo,
@@ -143,103 +137,6 @@ const postrelease = async (org, repo, sha) => {
   );
 
   return { version: newTagVersion.version };
-};
-
-const createLogMessages = (
-    logs,
-    org,
-    repo,
-    fromTag,
-    options = { links: true, messages: true, authors: true }
-) => {
-  let body = logs
-      .map((log) => {
-        return `
- - ${log.hash.slice(0, 7)}: ${
-            options.messages ? `**${log.message.split("\n")[0]}** ` : ""
-        }${options.authors ? `(${log.author_name}) ` : ""}${
-            options.links
-                ? `[_[compare](https://github.com/${org}/${repo}/compare/${fromTag}...${log.hash})_] `
-                : ``
-        }`;
-      })
-      .join("\n");
-
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping links...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: true,
-      messages: true,
-    });
-  }
-
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping messages...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: true,
-      messages: false,
-    });
-  }
-
-  if (body.length >= 20000) {
-    console.warn("Body is long. Skipping authors...");
-    body = createLogMessages(logs, org, repo, fromTag, {
-      links: false,
-      authors: false,
-      messages: false,
-    });
-  }
-
-  return body;
-};
-
-// TODO: Handle PR
-// TODO: Glob Up Commit Messages since last release
-const draftRelease = async (org, repo, version, sha) => {
-  const repoToken = core.getInput("repo-token");
-  const octokit = github.getOctokit(repoToken);
-
-  await gitClient.fetch(["--unshallow"]);
-
-  let fromTag;
-  try {
-    const latestRelease = await octokit.repos.getLatestRelease({
-      owner: org,
-      repo,
-    });
-    fromTag = latestRelease.data.tag_name;
-  } catch (e) {
-    console.warn("Unable to find latest release:", e.message);
-    fromTag = (await gitClient.log()).all.slice(-1)[0].hash;
-  }
-
-  // const info = await octokit.repos.get({ owner: org, repo });
-  // const defaultBranch = info.data.default_branch;
-
-  const { all: logs } = await simpleGit
-      .default()
-      .log({ from: fromTag, to: sha, "--first-parent": true });
-
-  let body = createLogMessages(logs, org, repo, fromTag);
-
-  const release = await octokit.repos.createRelease({
-    owner: org,
-    repo,
-    name: version.version,
-    tag_name: version.version,
-    draft: true,
-    body: `
-# Release ${version.version}:
-
-## Commits since [${fromTag}](https://github.com/${org}/${repo}/compare/${fromTag}...${version.version}):
-
-${body}
-`,
-  });
-
-  console.log(`Created release: ${release.data.name}: ${release.data.url}`);
 };
 
 const event = (org, repo, action) => {
