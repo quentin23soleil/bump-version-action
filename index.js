@@ -56,34 +56,6 @@ const versionFetch = async () => {
   const tags = await gitClient.tags()
   return { version: tags.latest }
 };
-const prerelease = async (org, repo) => {
-  const version = await versionFetch();
-
-  console.log("Current version:", version.version);
-
-  const newVersion = semver.parse(
-      semver.inc(semver.parse(version.version), "prerelease")
-  );
-
-  console.log("New version:", newVersion.version);
-
-  const title = commitMessagePrefix(`CI: Prerelease: ${newVersion.version}`);
-
-  await gitClient.add(".");
-
-  const versionCommit = await gitClient.commit(title);
-  console.log(
-      `Committed new version: ${newVersion.version}`,
-      JSON.stringify(versionCommit)
-  );
-
-  const tag = await gitClient.addTag(newVersion.version);
-  console.log(`Created new tag: ${tag.name}`);
-
-  await gitClient.push(["--follow-tags"]);
-  await gitClient.pushTags();
-  return { version: newVersion };
-};
 
 const postrelease = async (org, repo, sha) => {
   const repoToken = core.getInput("repo-token");
@@ -96,9 +68,11 @@ const postrelease = async (org, repo, sha) => {
   await gitClient.fetch();
   await gitClient.checkout(sha);
   const tagVersion = await versionFetch();
+  console.log(`Latest version : ${tagVersion.version}`);
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
+  console.log(`New Latest version : ${newTagVersion.version}`);
   const tag = await gitClient.addTag(newTagVersion.version);
   console.log(`Created new tag: ${tag.name}`);
 
@@ -329,12 +303,6 @@ const run = async () => {
       .addConfig("user.email", "github-action@users.noreply.github.com");
 
   switch (action) {
-    case "prerelease": {
-      const { version } = await prerelease(organization, repo);
-      await draftRelease(organization, repo, version, sha);
-      break;
-    }
-
     case "postrelease": {
       // Naively bumping version, but this is probably good...
       await postrelease(organization, repo, sha);
