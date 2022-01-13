@@ -48,9 +48,13 @@ const repoInfo = async () => {
   return info;
 };
 
-const versionFetch = async () => {
-  const tags = await gitClient.tags()
-  return { version: tags.latest }
+const versionFetch = async(octokit, org, repo) => {
+  const latestRelease = await octokit.repos.getLatestRelease({
+    owner: org,
+    repo,
+  });
+  
+  return { version: latestRelease.data.tag_name }
 };
 
 const postrelease = async (org, repo, sha) => {
@@ -63,7 +67,7 @@ const postrelease = async (org, repo, sha) => {
 
   await gitClient.fetch();
   await gitClient.checkout(sha);
-  const tagVersion = await versionFetch();
+  const tagVersion = await versionFetch(octokit, org, repo);
   console.log(`Latest version : ${tagVersion.version}`);
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
