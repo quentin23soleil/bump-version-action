@@ -101,20 +101,20 @@ HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 
   console.log(`Created release: ${release.data.name}: ${release.data.url}`);
 
-  // for (let releaseFilesKey in releaseFiles) {
-  //   let filePath = releaseFiles[releaseFilesKey]
-  //   let filename = path.basename(filePath)
-  //   let file = fs.readFileSync(filePath)
-  //   console.log(`uploading: ${filePath}`);
-  //
-  //   await octokit.repos.uploadReleaseAsset({
-  //     owner: org,
-  //     repo,
-  //     release_id: release.data.id,
-  //     name: filename,
-  //     data: file
-  //   })
-  // }
+  for (let releaseFilesKey in releaseFiles) {
+    let filePath = releaseFiles[releaseFilesKey]
+    let filename = path.basename(filePath)
+    let file = fs.readFileSync(filePath)
+    console.log(`uploading: ${filePath}`);
+
+    await octokit.repos.uploadReleaseAsset({
+      owner: org,
+      repo,
+      release_id: release.data.id,
+      name: filename,
+      data: file
+    })
+  }
   console.log(
       `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
   );
