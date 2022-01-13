@@ -49,12 +49,20 @@ const repoInfo = async () => {
 };
 
 const versionFetch = async(octokit, org, repo) => {
-  const latestRelease = await octokit.repos.getLatestRelease({
-    owner: org,
-    repo,
-  });
-  
-  return { version: latestRelease.data.tag_name }
+
+  let fromTag;
+  try {
+    const latestRelease = await octokit.repos.getLatestRelease({
+      owner: org,
+      repo,
+    });
+    fromTag = latestRelease.data.tag_name;
+  } catch (e) {
+    console.warn("Unable to find latest release:", e.message);
+    fromTag = (await gitClient.log()).all.slice(-1)[0].hash;
+  }
+
+  return { version: fromTag }
 };
 
 const postrelease = async (org, repo, sha) => {
