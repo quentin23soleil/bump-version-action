@@ -72,7 +72,7 @@ const postrelease = async (org, repo, sha) => {
   const newTagVersion = semver.parse(
       semver.inc(semver.parse(tagVersion.version), "patch")
   );
-  console.log(`New Latest version : ${newTagVersion.version}`);
+  console.log(`New Latest version : ${JSON.stringify(newTagVersion)}`);
   const tag = await gitClient.addTag(newTagVersion.version);
   console.log(`Created new tag: ${tag.name}`);
 
