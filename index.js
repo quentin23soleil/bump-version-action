@@ -41,17 +41,6 @@ const repoInfo = async () => {
   return info;
 };
 
-const commitMessagePrefix = (message) => {
-  const prefix = core.getInput("commit-message-prefix", {
-    required: false,
-  });
-  if (!prefix) {
-    return `🤖 ${message}`;
-  }
-
-  return `🤖 ${prefix} ${message}`;
-};
-
 const versionFetch = async () => {
   const tags = await gitClient.tags()
   return { version: tags.latest }
@@ -99,76 +88,38 @@ const postrelease = async (org, repo, sha) => {
     await gitClient.pushTags();
   }
 
-  const releaseBranch = core.getInput("release-branch", { required: false });
-
-  if (releaseBranch) {
-    const release = await octokit.repos.createRelease({
-      owner: org,
-      repo,
-      name: newTagVersion.version,
-      tag_name: newTagVersion.version,
-      draft: false,
-      body: `
+  const release = await octokit.repos.createRelease({
+    owner: org,
+    repo,
+    name: newTagVersion.version,
+    tag_name: newTagVersion.version,
+    draft: false,
+    body: `
 HOTFIX: \`${tagVersion.version}\` to \`${newTagVersion.version}\`
 `,
-    });
+  });
 
-    console.log(`Created release: ${release.data.name}: ${release.data.url}`);
-  } else {
-    const release = await octokit.repos.getReleaseByTag({
-      owner: org,
-      repo,
-      tag: tagVersion.version,
-    });
+  console.log(`Created release: ${release.data.name}: ${release.data.url}`);
 
-    await octokit.repos.updateRelease({
-      owner: org,
-      repo,
-      release_id: release.data.id,
-      name: newTagVersion.version,
-      tag_name: newTagVersion.version,
-    });
+  // for (let releaseFilesKey in releaseFiles) {
+  //   let filePath = releaseFiles[releaseFilesKey]
+  //   let filename = path.basename(filePath)
+  //   let file = fs.readFileSync(filePath)
+  //   console.log(`uploading: ${filePath}`);
+  //
+  //   await octokit.repos.uploadReleaseAsset({
+  //     owner: org,
+  //     repo,
+  //     release_id: release.data.id,
+  //     name: filename,
+  //     data: file
+  //   })
+  // }
+  console.log(
+      `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
+  );
 
-    const info = await octokit.repos.get({ owner: org, repo });
-    let defaultBranch = info.data.default_branch;
-
-    if (releaseBranch) {
-      defaultBranch = releaseBranch;
-    }
-
-    console.log("Updating version on branch:", releaseBranch);
-
-    await gitClient.checkout(defaultBranch);
-
-    const version = await versionFetch();
-    console.log("Current version", version.version);
-
-    const newVersion = semver.parse(
-        semver.inc(semver.parse(version.version), "patch")
-    );
-    console.log("New version", newVersion.version);
-    await gitClient.push();
-
-    // for (let releaseFilesKey in releaseFiles) {
-    //   let filePath = releaseFiles[releaseFilesKey]
-    //   let filename = path.basename(filePath)
-    //   let file = fs.readFileSync(filePath)
-    //   console.log(`uploading: ${filePath}`);
-    //
-    //   await octokit.repos.uploadReleaseAsset({
-    //     owner: org,
-    //     repo,
-    //     release_id: release.data.id,
-    //     name: filename,
-    //     data: file
-    //   })
-    // }
-    console.log(
-        `Updated release ${release.data.id} on tag ${tagVersion.version} to tag: ${newTagVersion.version}`
-    );
-
-    return { version: newVersion };
-  }
+  return { version: newVersion };
 };
 
 const createLogMessages = (
